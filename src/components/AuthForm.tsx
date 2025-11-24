@@ -21,11 +21,11 @@ export default function AuthForm() {
         throw new Error('Email ou senha incorretos');
       }
 
-      // const { error } = await supabase.auth.signInWithPassword({
-      //   email,
-      //   password,
-      // });
-      //if (error) throw error;
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;;
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao autenticar');
