@@ -25,7 +25,7 @@ export default function AuthForm() {
         email,
         password,
       });
-      if (error) throw error;;
+      if (error) throw error;
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao autenticar');
