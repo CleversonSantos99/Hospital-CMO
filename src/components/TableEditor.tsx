@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 
 type TableEditorProps = {
-  tableName: 'patients' | 'appointments';
+  tableName: 'patients' | 'appointments' | 'especialidade' | 'procedimentos';
   columns: Array<{
     key: string;
     label: string;
@@ -27,10 +27,15 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: result, error } = await supabase
-      .from(tableName)
-      .select('*')
-      .order('created_at', { ascending: false });
+    let query = supabase.from(tableName).select('*');
+
+    if (tableName === 'patients' || tableName === 'appointments') {
+      query = query.order('created_at', { ascending: false });
+    } else {
+      query = query.order('id', { ascending: false });
+    }
+
+    const { data: result, error } = await query;
 
     if (error) {
       console.error('Error fetching data:', error);
@@ -53,9 +58,13 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   };
 
   const handleSave = async () => {
+    const updateData = tableName === 'patients' || tableName === 'appointments'
+      ? { ...editedRow, updated_at: new Date().toISOString() }
+      : { ...editedRow };
+
     const { error } = await supabase
       .from(tableName)
-      .update({ ...editedRow, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', editingId);
 
     if (error) {

@@ -28,3 +28,29 @@ export type Appointment = {
   created_at: string;
   updated_at: string;
 };
+
+export type Especialidade = {
+  id: number;
+  especialidade: string | null;
+  valor_particular: string | null;
+  valor_cartao_cmo: string | null;
+  valor_pax_vida: string | null;
+  conveniados: string | null;
+  profissional: string | null;
+  registro: string | null;
+  atendimento: string | null;
+  convenio: string | null;
+  observacoes: string | null;
+  tipo: string | null;
+};
+
+export type Procedimento = {
+  id: number;
+  procedimento: string | null;
+  valor_particular: string | null;
+  valor_cartao_cmo: string | null;
+  valor_pax_vida: string | null;
+  atendimento: string | null;
+  convenio: string | null;
+  observacoes: string | null;
+};
