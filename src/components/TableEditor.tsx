@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type TableEditorProps = {
   tableName: 'patients' | 'appointments' | 'especialidade' | 'procedimentos';
@@ -15,82 +15,70 @@ type TableEditorProps = {
 
 export default function TableEditor({ tableName, columns }: TableEditorProps) {
   const [data, setData] = useState<any[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editedRow, setEditedRow] = useState<any>({});
+  const [totalCount, setTotalCount] = useState(0);
+  const [editingRow, setEditingRow] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
-  const [newRow, setNewRow] = useState<any>({});
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
-    fetchData();
-  }, [tableName]);
+    setCurrentPage(0);
+    fetchData(0);
+  }, [tableName, pageSize]);
 
-  const fetchData = async () => {
+  const fetchData = async (page: number) => {
     setLoading(true);
-    let query = supabase.from(tableName).select('*');
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
 
-    if (tableName === 'patients' || tableName === 'appointments') {
-      query = query.order('created_at', { ascending: false });
-    } else {
-      query = query.order('id', { ascending: false });
-    }
-
-    const { data: result, error } = await query;
+    const { data: result, error, count } = await supabase
+      .from(tableName)
+      .select('*', { count: 'exact' })
+      .order('id', { ascending: true })
+      .range(from, to);
 
     if (error) {
       console.error('Error fetching data:', error);
     } else {
       setData(result || []);
+      setTotalCount(count || 0);
     }
     setLoading(false);
   };
 
   const handleEdit = (row: any) => {
-    setEditingId(row.id);
-    setEditedRow({ ...row });
+    setEditingRow({ ...row });
   };
 
   const handleCancel = () => {
-    setEditingId(null);
-    setEditedRow({});
-    setIsAdding(false);
-    setNewRow({});
+    setEditingRow(null);
   };
 
   const handleSave = async () => {
-    const updateData = tableName === 'patients' || tableName === 'appointments'
-      ? { ...editedRow, updated_at: new Date().toISOString() }
-      : { ...editedRow };
+    if (!editingRow) return;
+
+    const id = editingRow.id;
+    const updateData = { ...editingRow };
+    delete updateData.id;
+
+    if (tableName === 'patients' || tableName === 'appointments') {
+      updateData.updated_at = new Date().toISOString();
+    }
 
     const { error } = await supabase
       .from(tableName)
       .update(updateData)
-      .eq('id', editingId);
+      .eq('id', id);
 
     if (error) {
       alert('Erro ao salvar: ' + error.message);
     } else {
-      setEditingId(null);
-      setEditedRow({});
-      fetchData();
+      setEditingRow(null);
+      fetchData(currentPage);
     }
   };
 
-  const handleAdd = async () => {
-    const { error } = await supabase
-      .from(tableName)
-      .insert([newRow]);
-
-    if (error) {
-      alert('Erro ao adicionar: ' + error.message);
-    } else {
-      setIsAdding(false);
-      setNewRow({});
-      fetchData();
-    }
-  };
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | number) => {
     if (!confirm('Tem certeza que deseja excluir este registro?')) return;
 
     const { error } = await supabase
@@ -101,74 +89,33 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     if (error) {
       alert('Erro ao excluir: ' + error.message);
     } else {
-      fetchData();
+      fetchData(currentPage);
     }
   };
 
-  const handleChange = (key: string, value: any, isNew = false) => {
-    if (isNew) {
-      setNewRow({ ...newRow, [key]: value });
-    } else {
-      setEditedRow({ ...editedRow, [key]: value });
-    }
+  const handleModalChange = (key: string, value: any) => {
+    setEditingRow({ ...editingRow, [key]: value });
   };
 
-  const renderCell = (row: any, column: any) => {
-    const isEditing = editingId === row.id;
-    const value = isEditing ? editedRow[column.key] : row[column.key];
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const renderModalField = (column: any) => {
+    const value = editingRow?.[column.key];
 
     if (column.key === 'id' || column.key === 'created_at' || column.key === 'updated_at') {
-      return <span className="text-gray-500 text-sm">{value}</span>;
-    }
-
-    if (!isEditing) {
-      if (column.type === 'date' && value) {
-        return new Date(value).toLocaleDateString('pt-BR');
-      }
-      if (column.type === 'datetime' && value) {
-        return new Date(value).toLocaleString('pt-BR');
-      }
-      return value || '-';
+      return (
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
+          {value || 'N/A'}
+        </div>
+      );
     }
 
     if (column.type === 'select') {
       return (
         <select
           value={value || ''}
-          onChange={(e) => handleChange(column.key, e.target.value)}
-          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-        >
-          {column.options?.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      );
-    }
-
-    return (
-      <input
-        type={column.type}
-        value={value || ''}
-        onChange={(e) => handleChange(column.key, e.target.value)}
-        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-      />
-    );
-  };
-
-  const renderNewRowCell = (column: any) => {
-    if (column.key === 'id' || column.key === 'created_at' || column.key === 'updated_at') {
-      return <span className="text-gray-400 text-sm">Auto</span>;
-    }
-
-    if (column.type === 'select') {
-      return (
-        <select
-          value={newRow[column.key] || ''}
-          onChange={(e) => handleChange(column.key, e.target.value, true)}
-          className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-          required={column.required}
+          onChange={(e) => handleModalChange(column.key, e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
         >
           <option value="">Selecione...</option>
           {column.options?.map((opt) => (
@@ -183,10 +130,9 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     return (
       <input
         type={column.type}
-        value={newRow[column.key] || ''}
-        onChange={(e) => handleChange(column.key, e.target.value, true)}
-        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-        required={column.required}
+        value={value || ''}
+        onChange={(e) => handleModalChange(column.key, e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
       />
     );
   };
@@ -200,94 +146,59 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <div className="mb-4 flex justify-end">
-        <button
-          onClick={() => setIsAdding(true)}
-          disabled={isAdding || editingId !== null}
-          className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar
-        </button>
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-600">Linhas por página:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        <span className="text-sm text-gray-500">Total: {totalCount} registros</span>
       </div>
 
-      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            {columns.map((col) => (
-              <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                {col.label}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              {columns.map((col) => (
+                <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  {col.label}
+                </th>
+              ))}
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Ações
               </th>
-            ))}
-            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {isAdding && (
-            <tr className="border-b border-gray-200 bg-teal-50">
-              {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3">
-                  {renderNewRowCell(col)}
-                </td>
-              ))}
-              <td className="px-4 py-3 text-right">
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={handleAdd}
-                    className="text-green-600 hover:text-green-700 p-1 transition"
-                    title="Salvar"
-                  >
-                    <Save className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="text-gray-600 hover:text-gray-700 p-1 transition"
-                    title="Cancelar"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
             </tr>
-          )}
-          {data.map((row) => (
-            <tr
-              key={row.id}
-              className={`border-b border-gray-200 hover:bg-gray-50 transition ${
-                editingId === row.id ? 'bg-blue-50' : ''
-              }`}
-            >
-              {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3">
-                  {renderCell(row, col)}
-                </td>
-              ))}
-              <td className="px-4 py-3 text-right">
-                {editingId === row.id ? (
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={handleSave}
-                      className="text-green-600 hover:text-green-700 p-1 transition"
-                      title="Salvar"
-                    >
-                      <Save className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      className="text-gray-600 hover:text-gray-700 p-1 transition"
-                      title="Cancelar"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr key={row.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                {columns.map((col) => {
+                  let value = row[col.key];
+                  if (col.type === 'date' && value) {
+                    value = new Date(value).toLocaleDateString('pt-BR');
+                  } else if (col.type === 'datetime' && value) {
+                    value = new Date(value).toLocaleString('pt-BR');
+                  }
+                  return (
+                    <td key={col.key} className="px-4 py-3 text-sm text-gray-700">
+                      {value || '-'}
+                    </td>
+                  );
+                })}
+                <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => handleEdit(row)}
-                      disabled={editingId !== null || isAdding}
+                      disabled={editingRow !== null}
                       className="text-blue-600 hover:text-blue-700 p-1 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Editar"
                     >
@@ -295,23 +206,90 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
                     </button>
                     <button
                       onClick={() => handleDelete(row.id)}
-                      disabled={editingId !== null || isAdding}
+                      disabled={editingRow !== null}
                       className="text-red-600 hover:text-red-700 p-1 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {data.length === 0 && !isAdding && (
+      {data.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           Nenhum registro encontrado
+        </div>
+      )}
+
+      <div className="mt-6 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Página {currentPage + 1} de {totalPages}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => fetchData(currentPage - 1)}
+            disabled={currentPage === 0}
+            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Anterior
+          </button>
+          <button
+            onClick={() => fetchData(currentPage + 1)}
+            disabled={currentPage >= totalPages - 1}
+            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Próxima
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {editingRow && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-800">Editar Registro</h2>
+              <button
+                onClick={handleCancel}
+                className="text-gray-500 hover:text-gray-700 transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {columns.map((col) => (
+                <div key={col.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {col.label}
+                  </label>
+                  {renderModalField(col)}
+                </div>
+              ))}
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition"
+              >
+                <Save className="w-4 h-4" />
+                Salvar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
