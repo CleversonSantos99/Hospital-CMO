@@ -67,10 +67,6 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     delete updateData.created_at;
     delete updateData.updated_at;
 
-    if (tableName === 'especialidade' || tableName === 'procedimentos') {
-      updateData.updated_at = new Date().toISOString();
-    }
-
     const { error } = await supabase
       .from(tableName)
       .update(updateData)
@@ -120,7 +116,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   const renderModalField = (column: any) => {
     const value = editingRow?.[column.key];
 
-    if (column.key === 'id' || column.key === 'created_at' || column.key === 'updated_at') {
+    if (column.key === 'id') {
       return (
         <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
           {value || 'N/A'}
