@@ -47,7 +47,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-800">Hospital CMO</h1>
-                <p className="text-xs text-gray-500">Sistema de Gerenciamento</p>
+                <p className="text-xs text-gray-500">Base de Dados da IA</p>
               </div>
             </div>
             <button
