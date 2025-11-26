@@ -26,6 +26,10 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     fetchData(0);
   }, [tableName, pageSize]);
 
+  useEffect(() => {
+    fetchData(currentPage);
+  }, [currentPage]);
+
   const fetchData = async (page: number) => {
     setLoading(true);
     const from = page * pageSize;
@@ -95,6 +99,18 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
 
   const handleModalChange = (key: string, value: any) => {
     setEditingRow({ ...editingRow, [key]: value });
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -232,7 +248,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => fetchData(currentPage - 1)}
+            onClick={handlePrevPage}
             disabled={currentPage === 0}
             className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -240,7 +256,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
             Anterior
           </button>
           <button
-            onClick={() => fetchData(currentPage + 1)}
+            onClick={handleNextPage}
             disabled={currentPage >= totalPages - 1}
             className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
