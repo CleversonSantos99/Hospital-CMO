@@ -66,7 +66,7 @@ export default function Dashboard() {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex gap-8">
               <button
-                onClick={() => setActiveTab('patients')}
+                onClick={() => setActiveTab('especialidade')}
                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition ${
                   activeTab === 'especialidade'
                     ? 'border-teal-500 text-teal-600'
