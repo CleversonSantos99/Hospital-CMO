@@ -64,6 +64,8 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     const id = editingRow.id;
     const updateData = { ...editingRow };
     delete updateData.id;
+    delete updateData.created_at;
+    delete updateData.updated_at;
 
     if (tableName === 'especialidade' || tableName === 'procedimentos') {
       updateData.updated_at = new Date().toISOString();
