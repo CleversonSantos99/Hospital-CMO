@@ -94,11 +94,6 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow">
           <div className="p-6">
             {activeTab === 'patients' && (
-              <TableEditor tableName="patients" columns={patientsColumns} />
-            )}
-            {activeTab === 'appointments' && (
-              <TableEditor tableName="appointments" columns={appointmentsColumns} />
-            )}
             {activeTab === 'especialidade' && (
               <TableEditor tableName="especialidade" columns={especialidadeColumns} />
             )}
