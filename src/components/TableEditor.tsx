@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type TableEditorProps = {
-  tableName: 'patients' | 'appointments' | 'especialidade' | 'procedimentos';
+  tableName: 'especialidade' | 'procedimentos';
   columns: Array<{
     key: string;
     label: string;
