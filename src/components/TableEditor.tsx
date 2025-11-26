@@ -17,6 +17,8 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   const [data, setData] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [editingRow, setEditingRow] = useState<any | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newRow, setNewRow] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(0);
@@ -56,6 +58,8 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
 
   const handleCancel = () => {
     setEditingRow(null);
+    setIsAdding(false);
+    setNewRow({});
   };
 
   const handleSave = async () => {
@@ -96,7 +100,36 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   };
 
   const handleModalChange = (key: string, value: any) => {
-    setEditingRow({ ...editingRow, [key]: value });
+    if (isAdding) {
+      setNewRow({ ...newRow, [key]: value });
+    } else {
+      setEditingRow({ ...editingRow, [key]: value });
+    }
+  };
+
+  const handleAdd = () => {
+    setIsAdding(true);
+    setNewRow({});
+  };
+
+  const handleSaveNew = async () => {
+    const insertData = { ...newRow };
+    delete insertData.id;
+    delete insertData.created_at;
+    delete insertData.updated_at;
+
+    const { error } = await supabase
+      .from(tableName)
+      .insert([insertData]);
+
+    if (error) {
+      alert('Erro ao adicionar: ' + error.message);
+    } else {
+      setIsAdding(false);
+      setNewRow({});
+      setCurrentPage(0);
+      fetchData(0);
+    }
   };
 
   const handleNextPage = () => {
@@ -114,12 +147,12 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const renderModalField = (column: any) => {
-    const value = editingRow?.[column.key];
+    const value = isAdding ? newRow[column.key] : editingRow?.[column.key];
 
     if (column.key === 'id') {
       return (
         <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
-          {value || 'N/A'}
+          {isAdding ? 'Gerado automaticamente' : (value || 'N/A')}
         </div>
       );
     }
@@ -147,6 +180,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
         onChange={(e) => handleModalChange(column.key, e.target.value)}
         rows={3}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none resize-none"
+        placeholder={isAdding ? `Digite ${column.label.toLowerCase()}...` : ''}
       />
     );
   };
@@ -175,7 +209,17 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
             <option value={100}>100</option>
           </select>
         </div>
-        <span className="text-sm text-gray-500">Total: {totalCount} registros</span>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <span className="text-sm text-gray-500 text-center sm:text-left">Total: {totalCount} registros</span>
+          <button
+            onClick={handleAdd}
+            disabled={editingRow !== null || isAdding}
+            className="flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar
+          </button>
+        </div>
       </div>
 
       {/* Layout de Cards para Mobile */}
@@ -312,11 +356,13 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
         </div>
       </div>
 
-      {editingRow && (
+      {(editingRow || isAdding) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-800">Editar Registro</h2>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {isAdding ? 'Adicionar Novo Registro' : 'Editar Registro'}
+              </h2>
               <button
                 onClick={handleCancel}
                 className="text-gray-500 hover:text-gray-700 transition"
@@ -330,6 +376,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
                 <div key={col.key}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {col.label}
+                    {col.required && <span className="text-red-500 ml-1">*</span>}
                   </label>
                   {renderModalField(col)}
                 </div>
@@ -344,11 +391,11 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
                 Cancelar
               </button>
               <button
-                onClick={handleSave}
+                onClick={isAdding ? handleSaveNew : handleSave}
                 className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition"
               >
                 <Save className="w-4 h-4" />
-                Salvar
+                {isAdding ? 'Adicionar' : 'Salvar'}
               </button>
             </div>
           </div>
