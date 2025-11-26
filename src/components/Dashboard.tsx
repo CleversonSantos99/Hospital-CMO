@@ -3,39 +3,14 @@ import { supabase } from '../lib/supabase';
 import TableEditor from './TableEditor';
 import { Users, Calendar, LogOut, Database, Stethoscope, Wrench } from 'lucide-react';
 
-type TabType = 'patients' | 'appointments' | 'especialidade' | 'procedimentos';
+type TabType = 'especialidade' | 'procedimentos';
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>('patients');
+  const [activeTab, setActiveTab] = useState<TabType>('especialidade');
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
-
-  const patientsColumns = [
-    { key: 'name', label: 'Nome', type: 'text' as const, required: true },
-    { key: 'cpf', label: 'CPF', type: 'text' as const, required: true },
-    { key: 'birth_date', label: 'Data Nascimento', type: 'date' as const, required: true },
-    { key: 'phone', label: 'Telefone', type: 'text' as const, required: true },
-    { key: 'email', label: 'Email', type: 'text' as const },
-    { key: 'address', label: 'Endereço', type: 'text' as const },
-    { key: 'created_at', label: 'Criado em', type: 'datetime' as const },
-  ];
-
-  const appointmentsColumns = [
-    { key: 'doctor_name', label: 'Médico', type: 'text' as const, required: true },
-    { key: 'specialty', label: 'Especialidade', type: 'text' as const, required: true },
-    { key: 'appointment_date', label: 'Data Consulta', type: 'datetime' as const, required: true },
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select' as const,
-      options: ['scheduled', 'completed', 'cancelled'],
-      required: true
-    },
-    { key: 'notes', label: 'Observações', type: 'text' as const },
-    { key: 'created_at', label: 'Criado em', type: 'datetime' as const },
-  ];
 
   const especialidadeColumns = [
     { key: 'especialidade', label: 'Especialidade', type: 'text' as const },
