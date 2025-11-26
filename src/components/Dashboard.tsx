@@ -93,7 +93,6 @@ export default function Dashboard() {
 
         <div className="bg-white rounded-lg shadow">
           <div className="p-6">
-            {activeTab === 'patients' && (
             {activeTab === 'especialidade' && (
               <TableEditor tableName="especialidade" columns={especialidadeColumns} />
             )}
