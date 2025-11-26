@@ -142,11 +142,11 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     }
 
     return (
-      <input
-        type={column.type}
+      <textarea
         value={value || ''}
         onChange={(e) => handleModalChange(column.key, e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+        rows={3}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none resize-none"
       />
     );
   };
@@ -161,7 +161,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-600">Linhas por página:</span>
           <select
@@ -178,16 +178,62 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
         <span className="text-sm text-gray-500">Total: {totalCount} registros</span>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Layout de Cards para Mobile */}
+      <div className="block lg:hidden space-y-4">
+        {data.map((row) => (
+          <div key={row.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            {columns.map((col) => {
+              if (col.key === 'id') return null;
+              let value = row[col.key];
+              if (col.type === 'date' && value) {
+                value = new Date(value).toLocaleDateString('pt-BR');
+              } else if (col.type === 'datetime' && value) {
+                value = new Date(value).toLocaleString('pt-BR');
+              }
+              return (
+                <div key={col.key} className="mb-3 last:mb-0">
+                  <dt className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                    {col.label}
+                  </dt>
+                  <dd className="text-sm text-gray-900 break-words">
+                    {value || '-'}
+                  </dd>
+                </div>
+              );
+            })}
+            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => handleEdit(row)}
+                disabled={editingRow !== null}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Edit2 className="w-4 h-4" />
+                Editar
+              </button>
+              <button
+                onClick={() => handleDelete(row.id)}
+                disabled={editingRow !== null}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Layout de Tabela para Desktop */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {columns.map((col) => (
-                <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th key={col.key} className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                   {col.label}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-gray-50">
                 Ações
               </th>
             </tr>
@@ -203,13 +249,15 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
                     value = new Date(value).toLocaleString('pt-BR');
                   }
                   return (
-                    <td key={col.key} className="px-4 py-3 text-sm text-gray-700">
-                      {value || '-'}
+                    <td key={col.key} className="px-3 py-3 text-sm text-gray-700">
+                      <div className="max-w-xs break-words line-clamp-3">
+                        {value || '-'}
+                      </div>
                     </td>
                   );
                 })}
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2">
+                <td className="px-3 py-3 sticky right-0 bg-white">
+                  <div className="flex justify-center gap-2">
                     <button
                       onClick={() => handleEdit(row)}
                       disabled={editingRow !== null}
@@ -240,15 +288,15 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
         </div>
       )}
 
-      <div className="mt-6 flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+      <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="text-sm text-gray-600 text-center sm:text-left">
           Página {currentPage + 1} de {totalPages}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-center sm:justify-end">
           <button
             onClick={handlePrevPage}
             disabled={currentPage === 0}
-            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <ChevronLeft className="w-4 h-4" />
             Anterior
@@ -256,7 +304,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
           <button
             onClick={handleNextPage}
             disabled={currentPage >= totalPages - 1}
-            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             Próxima
             <ChevronRight className="w-4 h-4" />
