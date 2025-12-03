@@ -41,8 +41,8 @@ export default function Dashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <img src="/LOGO 8020.png" alt="Hospital CMO" className="h-12 w-auto" />
+            <div className="bg-black rounded-lg p-2">
+              <img src="/LOGO 8020.png" alt="Hospital CMO" className="h-10 w-auto" />
             </div>
             <button
               onClick={handleSignOut}

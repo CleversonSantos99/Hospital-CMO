@@ -39,7 +39,9 @@ export default function AuthForm() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex justify-center mb-8">
-            <img src="/LOGO 8020.png" alt="Hospital CMO" className="h-24 w-auto" />
+            <div className="bg-black rounded-lg p-4">
+              <img src="/LOGO 8020.png" alt="Hospital CMO" className="h-24 w-auto" />
+            </div>
           </div>
 
           <h2 className="text-xl font-semibold text-center text-gray-700 mb-6">
