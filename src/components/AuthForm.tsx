@@ -38,16 +38,8 @@ export default function AuthForm() {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="flex justify-center mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center">
-                <LogIn className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Hospital</h1>
-                <p className="text-sm text-teal-600 font-semibold">CMO</p>
-              </div>
-            </div>
+          <div className="flex justify-center mb-8">
+            <img src="/LOGO 8020.png" alt="Hospital CMO" className="h-24 w-auto" />
           </div>
 
           <h2 className="text-xl font-semibold text-center text-gray-700 mb-6">

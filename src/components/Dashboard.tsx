@@ -42,13 +42,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                <Database className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">Hospital CMO</h1>
-                <p className="text-xs text-gray-500">Base de Dados da IA</p>
-              </div>
+              <img src="/LOGO 8020.png" alt="Hospital CMO" className="h-12 w-auto" />
             </div>
             <button
               onClick={handleSignOut}
