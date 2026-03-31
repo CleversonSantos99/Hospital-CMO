@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/api';
 import { LogIn } from 'lucide-react';
 
 const VALID_EMAIL = 'hospitalcmoai@gmail.com';
@@ -21,12 +21,9 @@ export default function AuthForm() {
         throw new Error('Email ou senha incorretos');
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      
+      await apiClient.signIn(email, password);
+      window.location.reload();
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao autenticar');
     } finally {

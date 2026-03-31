@@ -1,28 +1,16 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './lib/supabase';
+import { apiClient } from './lib/api';
 import AuthForm from './components/AuthForm';
 import Dashboard from './components/Dashboard';
-import type { User } from '@supabase/supabase-js';
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setUser(session?.user ?? null);
-      })();
-    });
-
-    return () => subscription.unsubscribe();
+    const token = apiClient.getAccessToken();
+    setIsAuthenticated(!!token);
+    setLoading(false);
   }, []);
 
   if (loading) {
@@ -33,7 +21,7 @@ function App() {
     );
   }
 
-  return user ? <Dashboard /> : <AuthForm />;
+  return isAuthenticated ? <Dashboard /> : <AuthForm />;
 }
 
 export default App;

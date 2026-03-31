@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/api';
 import TableEditor from './TableEditor';
-import { Users, Calendar, LogOut, Database, Stethoscope, Wrench } from 'lucide-react';
+import { LogOut, Stethoscope, Wrench } from 'lucide-react';
 
 type TabType = 'especialidade' | 'procedimentos';
 
@@ -9,7 +9,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('especialidade');
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await apiClient.signOut();
+    window.location.reload();
   };
 
   const especialidadeColumns = [

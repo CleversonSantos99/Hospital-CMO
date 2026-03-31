@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { apiClient } from '../lib/api';
+import { CreditCard as Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type TableEditorProps = {
   tableName: 'especialidade' | 'procedimentos';
@@ -34,20 +34,22 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
 
   const fetchData = async (page: number) => {
     setLoading(true);
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
+    try {
+      let result;
+      if (tableName === 'especialidade') {
+        result = await apiClient.getEspecialidades();
+      } else {
+        result = await apiClient.getProcedimentos();
+      }
 
-    const { data: result, error, count } = await supabase
-      .from(tableName)
-      .select('*', { count: 'exact' })
-      .order('id', { ascending: true })
-      .range(from, to);
+      const from = page * pageSize;
+      const to = from + pageSize;
+      const paginatedData = result.slice(from, to);
 
-    if (error) {
+      setData(paginatedData || []);
+      setTotalCount(result.length || 0);
+    } catch (error) {
       console.error('Error fetching data:', error);
-    } else {
-      setData(result || []);
-      setTotalCount(count || 0);
     }
     setLoading(false);
   };
@@ -71,32 +73,23 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
     delete updateData.created_at;
     delete updateData.updated_at;
 
-    const { error } = await supabase
-      .from(tableName)
-      .update(updateData)
-      .eq('id', id);
-
-    if (error) {
-      alert('Erro ao salvar: ' + error.message);
-    } else {
+    try {
+      if (tableName === 'especialidade') {
+        await apiClient.updateEspecialidade(id, updateData);
+      } else {
+        await apiClient.updateProcedimento(id, updateData);
+      }
       setEditingRow(null);
       fetchData(currentPage);
+    } catch (error) {
+      alert('Erro ao salvar: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
     }
   };
 
   const handleDelete = async (id: string | number) => {
     if (!confirm('Tem certeza que deseja excluir este registro?')) return;
 
-    const { error } = await supabase
-      .from(tableName)
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert('Erro ao excluir: ' + error.message);
-    } else {
-      fetchData(currentPage);
-    }
+    alert('Funcionalidade de exclusão não está implementada na API');
   };
 
   const handleModalChange = (key: string, value: any) => {
@@ -113,23 +106,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   };
 
   const handleSaveNew = async () => {
-    const insertData = { ...newRow };
-    delete insertData.id;
-    delete insertData.created_at;
-    delete insertData.updated_at;
-
-    const { error } = await supabase
-      .from(tableName)
-      .insert([insertData]);
-
-    if (error) {
-      alert('Erro ao adicionar: ' + error.message);
-    } else {
-      setIsAdding(false);
-      setNewRow({});
-      setCurrentPage(0);
-      fetchData(0);
-    }
+    alert('Funcionalidade de adição não está implementada na API');
   };
 
   const handleNextPage = () => {
