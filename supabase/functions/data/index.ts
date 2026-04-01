@@ -164,7 +164,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const url = new URL(req.url);
-    const pathname = url.pathname.replace(/^\/functions\/[^/]+/, "");
+    const pathname = url.pathname.replace(/^\/functions\/[^/]+\/data/, "");
 
     if (pathname === "/especialidades" && req.method === "GET") {
       const result = await getEspecialidades();
