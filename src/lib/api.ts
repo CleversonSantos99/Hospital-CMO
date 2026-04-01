@@ -1,117 +1,37 @@
+import { supabase } from './supabaseClient';
+
 const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
-interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-}
-
 export class ApiClient {
-  private accessToken: string | null = null;
-  private refreshToken: string | null = null;
-
-  setTokens(access_token: string, refresh_token: string) {
-    this.accessToken = access_token;
-    this.refreshToken = refresh_token;
-    localStorage.setItem("access_token", access_token);
-    localStorage.setItem("refresh_token", refresh_token);
-  }
-
-  getAccessToken(): string | null {
-    if (this.accessToken) return this.accessToken;
-    this.accessToken = localStorage.getItem("access_token");
-    return this.accessToken;
-  }
-
-  getRefreshToken(): string | null {
-    if (this.refreshToken) return this.refreshToken;
-    this.refreshToken = localStorage.getItem("refresh_token");
-    return this.refreshToken;
-  }
-
-  clearTokens() {
-    this.accessToken = null;
-    this.refreshToken = null;
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-  }
-
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    return !!supabase.auth.getSession;
   }
 
-  private getHeaders(): HeadersInit {
+  private async getHeaders(): Promise<HeadersInit> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     };
 
-    const token = this.getAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
     }
 
     return headers;
   }
 
-  async signUp(email: string, password: string) {
-    const response = await fetch(`${API_URL}/auth/signup`, {
-      method: "POST",
-      headers: this.getHeaders(),
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Sign up failed");
-    }
-
-    return data;
-  }
-
-  async signIn(email: string, password: string) {
-    const response = await fetch(`${API_URL}/auth/signin`, {
-      method: "POST",
-      headers: this.getHeaders(),
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Sign in failed");
-    }
-
-    if (data.access_token && data.refresh_token) {
-      this.setTokens(data.access_token, data.refresh_token);
-    }
-
-    return data;
-  }
-
   async signOut() {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      this.clearTokens();
-      return;
-    }
-
-    try {
-      await fetch(`${API_URL}/auth/signout`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-    } catch (error) {
-      console.error("Sign out error:", error);
-    } finally {
-      this.clearTokens();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
     }
   }
 
   async getEspecialidades() {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}/data/especialidades`, {
       method: "GET",
-      headers: this.getHeaders(),
+      headers,
     });
 
     const data = await response.json();
@@ -124,9 +44,10 @@ export class ApiClient {
   }
 
   async getProcedimentos() {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}/data/procedimentos`, {
       method: "GET",
-      headers: this.getHeaders(),
+      headers,
     });
 
     const data = await response.json();
@@ -139,9 +60,10 @@ export class ApiClient {
   }
 
   async getLeads() {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}/data/leads`, {
       method: "GET",
-      headers: this.getHeaders(),
+      headers,
     });
 
     const data = await response.json();
@@ -154,9 +76,10 @@ export class ApiClient {
   }
 
   async getAgendamentos() {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}/data/agendamentos`, {
       method: "GET",
-      headers: this.getHeaders(),
+      headers,
     });
 
     const data = await response.json();
@@ -169,9 +92,10 @@ export class ApiClient {
   }
 
   async updateEspecialidade(id: number, payload: unknown) {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}/data/especialidades/${id}`, {
       method: "PUT",
-      headers: this.getHeaders(),
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -185,9 +109,10 @@ export class ApiClient {
   }
 
   async updateProcedimento(id: number, payload: unknown) {
+    const headers = await this.getHeaders();
     const response = await fetch(`${API_URL}/data/procedimentos/${id}`, {
       method: "PUT",
-      headers: this.getHeaders(),
+      headers,
       body: JSON.stringify(payload),
     });
 
