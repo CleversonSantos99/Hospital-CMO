@@ -166,7 +166,7 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const pathname = url.pathname.replace(/^\/functions\/[^/]+\/data/, "");
 
-    if (pathname === "/especialidade" && req.method === "GET") {
+    if (pathname === "/especialidades" && req.method === "GET") {
       const result = await getEspecialidades();
       return new Response(JSON.stringify(result.body), {
         status: result.status,
@@ -210,7 +210,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (pathname.startsWith("/especialidade/") && req.method === "PUT") {
+    if (pathname.startsWith("/especialidades/") && req.method === "PUT") {
       const id = parseInt(pathname.split("/")[2]);
       const payload = await req.json();
       const result = await updateEspecialidade(id, payload);
