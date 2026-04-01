@@ -109,7 +109,7 @@ export class ApiClient {
   }
 
   async getEspecialidades() {
-    const response = await fetch(`${API_URL}/data/especialidades`, {
+    const response = await fetch(`${}/data/especialidades`, {
       method: "GET",
       headers: this.getHeaders(),
     });
