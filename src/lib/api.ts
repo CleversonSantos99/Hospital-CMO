@@ -1,128 +1,171 @@
-import { supabase } from './supabaseClient';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const SESSION_KEY = 'cmo_session';
 
-export class ApiClient {
-  isAuthenticated(): boolean {
-    return !!supabase.auth.getSession;
+interface Session {
+  token: string;
+  refreshToken: string;
+  expiresAt: number;
+}
+
+function getSession(): Session | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
   }
+}
 
-  private async getHeaders(): Promise<HeadersInit> {
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
+function saveSession(session: Session) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      headers["Authorization"] = `Bearer ${session.access_token}`;
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+class ApiClient {
+  private async refreshIfNeeded(): Promise<string | null> {
+    const session = getSession();
+    if (!session) return null;
+
+    // Renova o token 60 segundos antes de expirar
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    if (session.expiresAt - nowInSeconds > 60) {
+      return session.token;
     }
 
-    return headers;
-  }
-
-  async signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw error;
-    }
-  }
-
-  async getEspecialidades() {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${API_URL}/data/especialidades`, {
-      method: "GET",
-      headers,
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch especialidades");
+    if (!res.ok) {
+      clearSession();
+      return null;
     }
 
-    return data.data;
+    const data = await res.json();
+    saveSession({ token: data.token, refreshToken: data.refreshToken, expiresAt: data.expiresAt });
+    return data.token;
+  }
+
+  private async fetch<T>(path: string, options?: RequestInit): Promise<T> {
+    const token = await this.refreshIfNeeded();
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
+
+    if (res.status === 401) {
+      clearSession();
+      window.dispatchEvent(new Event('auth:logout'));
+      throw new Error('Sessão expirada. Faça login novamente.');
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || 'Erro na requisição');
+    }
+
+    return res.json();
+  }
+
+  // ─── Auth ───────────────────────────────────────────────────────────────────
+  async login(email: string, password: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || 'Credenciais inválidas');
+    }
+
+    const data = await res.json();
+    saveSession({ token: data.token, refreshToken: data.refreshToken, expiresAt: data.expiresAt });
+  }
+
+  async signOut(): Promise<void> {
+    try {
+      await this.fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      clearSession();
+    }
+  }
+
+  isAuthenticated(): boolean {
+    return !!getSession();
+  }
+
+  // ─── Dados ──────────────────────────────────────────────────────────────────
+  async getEspecialidades() {
+    const { data } = await this.fetch<{ data: unknown[] }>('/api/especialidades');
+    return data;
   }
 
   async getProcedimentos() {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${API_URL}/data/procedimentos`, {
-      method: "GET",
-      headers,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch procedimentos");
-    }
-
-    return data.data;
+    const { data } = await this.fetch<{ data: unknown[] }>('/api/procedimentos');
+    return data;
   }
 
   async getLeads() {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${API_URL}/data/leads`, {
-      method: "GET",
-      headers,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch leads");
-    }
-
-    return data.data;
+    const { data } = await this.fetch<{ data: unknown[] }>('/api/leads');
+    return data;
   }
 
   async getAgendamentos() {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${API_URL}/data/agendamentos`, {
-      method: "GET",
-      headers,
+    const { data } = await this.fetch<{ data: unknown[] }>('/api/agendamentos');
+    return data;
+  }
+
+  async createEspecialidade(payload: unknown) {
+    const { data } = await this.fetch<{ data: unknown[] }>('/api/especialidades', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch agendamentos");
-    }
-
-    return data.data;
+    return data;
   }
 
   async updateEspecialidade(id: number, payload: unknown) {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${API_URL}/data/especialidades/${id}`, {
-      method: "PUT",
-      headers,
+    const { data } = await this.fetch<{ data: unknown[] }>(`/api/especialidades/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(payload),
     });
+    return data;
+  }
 
-    const data = await response.json();
+  async deleteEspecialidade(id: number) {
+    await this.fetch(`/api/especialidades/${id}`, { method: 'DELETE' });
+  }
 
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to update especialidade");
-    }
-
-    return data.data;
+  async createProcedimento(payload: unknown) {
+    const { data } = await this.fetch<{ data: unknown[] }>('/api/procedimentos', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return data;
   }
 
   async updateProcedimento(id: number, payload: unknown) {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${API_URL}/data/procedimentos/${id}`, {
-      method: "PUT",
-      headers,
+    const { data } = await this.fetch<{ data: unknown[] }>(`/api/procedimentos/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(payload),
     });
+    return data;
+  }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to update procedimento");
-    }
-
-    return data.data;
+  async deleteProcedimento(id: number) {
+    await this.fetch(`/api/procedimentos/${id}`, { method: 'DELETE' });
   }
 }
 

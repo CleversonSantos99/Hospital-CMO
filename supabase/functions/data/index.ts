@@ -48,7 +48,7 @@ async function getEspecialidades() {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from("especialidades")
+    .from("especialidade")
     .select("*");
 
   if (error) {
@@ -100,11 +100,71 @@ async function getAgendamentos() {
   return { status: 200, body: { data } };
 }
 
+async function createEspecialidade(payload: unknown) {
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from("especialidade")
+    .insert(payload)
+    .select();
+
+  if (error) {
+    return { status: 400, body: { error: error.message } };
+  }
+
+  return { status: 201, body: { data } };
+}
+
+async function deleteEspecialidade(id: number) {
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { error } = await supabase
+    .from("especialidade")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return { status: 400, body: { error: error.message } };
+  }
+
+  return { status: 200, body: { success: true } };
+}
+
+async function createProcedimento(payload: unknown) {
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from("procedimentos")
+    .insert(payload)
+    .select();
+
+  if (error) {
+    return { status: 400, body: { error: error.message } };
+  }
+
+  return { status: 201, body: { data } };
+}
+
+async function deleteProcedimento(id: number) {
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { error } = await supabase
+    .from("procedimentos")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return { status: 400, body: { error: error.message } };
+  }
+
+  return { status: 200, body: { success: true } };
+}
+
 async function updateEspecialidade(id: number, payload: unknown) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from("especialidades")
+    .from("especialidade")
     .update(payload)
     .eq("id", id)
     .select();
@@ -164,7 +224,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const url = new URL(req.url);
-    const pathname = url.pathname.replace(/^\/functions\/[^/]+/, "");
+    const pathname = url.pathname.replace(/^\/functions\/[^/]+\/data/, "");
 
     if (pathname === "/especialidades" && req.method === "GET") {
       const result = await getEspecialidades();
@@ -210,16 +270,40 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (pathname === "/especialidades" && req.method === "POST") {
+      const payload = await req.json();
+      const result = await createEspecialidade(payload);
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (pathname.startsWith("/especialidades/") && req.method === "PUT") {
       const id = parseInt(pathname.split("/")[2]);
       const payload = await req.json();
       const result = await updateEspecialidade(id, payload);
       return new Response(JSON.stringify(result.body), {
         status: result.status,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (pathname.startsWith("/especialidades/") && req.method === "DELETE") {
+      const id = parseInt(pathname.split("/")[2]);
+      const result = await deleteEspecialidade(id);
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (pathname === "/procedimentos" && req.method === "POST") {
+      const payload = await req.json();
+      const result = await createProcedimento(payload);
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -229,10 +313,16 @@ Deno.serve(async (req: Request) => {
       const result = await updateProcedimento(id, payload);
       return new Response(JSON.stringify(result.body), {
         status: result.status,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (pathname.startsWith("/procedimentos/") && req.method === "DELETE") {
+      const id = parseInt(pathname.split("/")[2]);
+      const result = await deleteProcedimento(id);
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

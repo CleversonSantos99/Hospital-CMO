@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { apiClient } from '../lib/api';
 
 export default function AuthForm() {
   const [email, setEmail] = useState('');
@@ -14,15 +14,7 @@ export default function AuthForm() {
     setError(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
+      await apiClient.login(email, password);
       window.location.reload();
 
     } catch (err) {

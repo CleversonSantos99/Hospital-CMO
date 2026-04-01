@@ -89,7 +89,16 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   const handleDelete = async (id: string | number) => {
     if (!confirm('Tem certeza que deseja excluir este registro?')) return;
 
-    alert('Funcionalidade de exclusão não está implementada na API');
+    try {
+      if (tableName === 'especialidade') {
+        await apiClient.deleteEspecialidade(id as number);
+      } else {
+        await apiClient.deleteProcedimento(id as number);
+      }
+      fetchData(currentPage);
+    } catch (error) {
+      alert('Erro ao excluir: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
   };
 
   const handleModalChange = (key: string, value: any) => {
@@ -106,7 +115,18 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
   };
 
   const handleSaveNew = async () => {
-    alert('Funcionalidade de adição não está implementada na API');
+    try {
+      if (tableName === 'especialidade') {
+        await apiClient.createEspecialidade(newRow);
+      } else {
+        await apiClient.createProcedimento(newRow);
+      }
+      setIsAdding(false);
+      setNewRow({});
+      fetchData(currentPage);
+    } catch (error) {
+      alert('Erro ao adicionar: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
   };
 
   const handleNextPage = () => {
