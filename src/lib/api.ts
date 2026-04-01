@@ -78,7 +78,6 @@ class ApiClient {
     return res.json();
   }
 
-  // ─── Auth ───────────────────────────────────────────────────────────────────
   async login(email: string, password: string): Promise<void> {
     const res = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
@@ -107,7 +106,6 @@ class ApiClient {
     return !!getSession();
   }
 
-  // ─── Dados ──────────────────────────────────────────────────────────────────
   async getEspecialidades() {
     const { data } = await this.fetch<{ data: unknown[] }>('/api/especialidades');
     return data;
