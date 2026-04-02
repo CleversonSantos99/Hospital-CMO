@@ -15,8 +15,6 @@ export default function AuthForm() {
 
     try {
       await apiClient.login(email, password);
-      window.location.reload();
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao autenticar');
     } finally {

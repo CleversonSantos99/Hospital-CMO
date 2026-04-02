@@ -162,7 +162,7 @@ export default function TableEditor({ tableName, columns }: TableEditorProps) {
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
         >
           <option value="">Selecione...</option>
-          {column.options?.map((opt) => (
+          {column.options?.map((opt: string) => (
             <option key={opt} value={opt}>
               {opt}
             </option>

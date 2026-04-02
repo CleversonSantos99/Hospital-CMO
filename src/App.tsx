@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiClient } from './lib/api';
+import { supabase } from './lib/supabaseClient';
 import AuthForm from './components/AuthForm';
 import Dashboard from './components/Dashboard';
 
@@ -8,12 +8,16 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setIsAuthenticated(apiClient.isAuthenticated());
-    setLoading(false);
+    supabase.auth.getSession().then(({ data }) => {
+      setIsAuthenticated(!!data.session);
+      setLoading(false);
+    });
 
-    const handleLogout = () => setIsAuthenticated(false);
-    window.addEventListener('auth:logout', handleLogout);
-    return () => window.removeEventListener('auth:logout', handleLogout);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (loading) {
